@@ -15,7 +15,12 @@
       "Bash(git init:*)",
       "Bash(git remote:*)",
       "Bash(npm publish:*)",
-      "Bash(ls -la /Users/niannian/page-agent-claw/*.md)"
+      "Bash(ls -la /Users/niannian/page-agent-claw/*.md)",
+      "WebSearch",
+      "Bash(chmod +x /Users/niannian/page-agent-claw/skills/page-agent/bin/*.sh)",
+      "Bash(mv page-agent-install.sh page-agent-claw-install.sh)",
+      "Bash(mv page-agent-status.sh page-agent-claw-status.sh)",
+      "Bash(mv page-agent-task.sh page-agent-claw-task.sh)"
     ]
   }
 }
