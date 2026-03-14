@@ -127,6 +127,45 @@
   font-size: 14px;
 }
 
+/* Intro banner */
+.intro-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px 24px;
+  margin: 0 auto;
+}
+
+.intro-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  color: white;
+}
+
+.intro-content h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.intro-content p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.intro-content a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.intro-content a:hover {
+  text-decoration: none;
+}
+
+.intro-en {
+  font-size: 13px !important;
+  opacity: 0.85;
+}
+
 /* Content grid */
 .content-grid {
   display: grid;

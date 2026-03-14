@@ -69,9 +69,19 @@ export function ConfigurationPanel({
             >
               {showToken ? 'Hide' : 'Show'}
             </button>
+            <button
+              type="button"
+              className="toggle-visibility save-refresh"
+              onClick={() => window.location.reload()}
+              disabled={isRunning}
+            >
+              保存&刷新
+            </button>
           </div>
           <span className="input-hint">
-            Get token from extension side panel
+            请打开 Page Agent Ext - 设置 将 User Auth Token 复制到这里
+            <br/>
+            Please open Page Agent Ext - Settings to copy your User Auth Token
           </span>
         </div>
       </div>

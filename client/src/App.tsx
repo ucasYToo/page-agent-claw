@@ -286,6 +286,23 @@ function App() {
         </div>
       </header>
 
+      <div className="intro-banner">
+        <div className="intro-content">
+          <h2>关于本服务</h2>
+          <p>
+            本服务将在本地启动 Node 服务，用于连接 Page Agent Chrome 扩展插件。
+            Page Agent Chrome 插件说明请参考
+            <a href="https://alibaba.github.io/page-agent/docs/features/chrome-extension" target="_blank" rel="noopener noreferrer">
+              官方文档
+            </a>
+          </p>
+          <p className="intro-en">
+            This service starts a local Node server to connect to the Page Agent Chrome extension.
+            Please refer to the <a href="https://alibaba.github.io/page-agent/docs/features/chrome-extension" target="_blank" rel="noopener noreferrer">official documentation</a> for more details.
+          </p>
+        </div>
+      </div>
+
       <main className="main">
         {!isConnected && !isChecking && (
           <div className="warning-banner">
