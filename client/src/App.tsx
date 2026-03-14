@@ -8,6 +8,15 @@ import type {
 import "./App.css";
 
 const WS_URL = "ws://localhost:4222";
+const PROXY_PREFIX = "http://localhost:4222/proxy/";
+
+// Convert baseURL to proxy URL
+function toProxyUrl(baseURL: string): string {
+  // Remove protocol from baseURL
+  const urlWithoutProtocol = baseURL.replace(/^https?:\/\//, '');
+  // URL encode and prepend proxy prefix
+  return `${PROXY_PREFIX}${encodeURIComponent(urlWithoutProtocol)}`;
+}
 
 // Module-level flag to prevent multiple WebSocket connections
 let wsInitialized = false;
@@ -156,7 +165,7 @@ function App() {
 
     try {
       const execResult = await window.PAGE_AGENT_EXT.execute(task, {
-        baseURL,
+        baseURL: toProxyUrl(baseURL),
         apiKey,
         model,
         includeInitialTab: true,

@@ -1,6 +1,6 @@
 {
   "name": "page-agent-claw",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Page Agent Dashboard - CLI tool to start the dashboard server",
   "type": "module",
   "main": "dist/server/index.js",
