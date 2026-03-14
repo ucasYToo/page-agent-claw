@@ -5,5 +5,6 @@ export interface ClientMessage {
     success?: boolean;
     data?: string;
     history?: unknown[];
+    status?: 'connected' | 'disconnected';
 }
 //# sourceMappingURL=types.d.ts.map

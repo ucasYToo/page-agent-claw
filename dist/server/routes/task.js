@@ -1,4 +1,4 @@
-import { clients, broadcastTask, generateTaskId, pendingRequests } from '../websocket/index.js';
+import { clients, pageAgentClients, broadcastTask, generateTaskId, pendingRequests } from '../websocket/index.js';
 const TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 export function setupRoutes(app) {
     // POST endpoint to receive task descriptions
@@ -67,6 +67,33 @@ export function setupRoutes(app) {
     app.get('/api/clients', (req, res) => {
         res.json({
             count: clients.size
+        });
+    });
+    // Status check endpoint
+    app.get('/api/status', (req, res) => {
+        const connectedNumber = clients.size;
+        if (connectedNumber === 0) {
+            // 无 WebSocket 连接
+            return res.json({
+                code: 100,
+                message: '请打开 localhost:4222 页面',
+                connectedNumber
+            });
+        }
+        if (pageAgentClients.size === 0) {
+            // 有 WebSocket 但无 page-agent
+            return res.json({
+                code: 105,
+                message: 'page-agent 未连接',
+                connectedNumber
+            });
+        }
+        // 正常
+        return res.json({
+            code: 200,
+            message: '正常',
+            connectedNumber,
+            pageAgentCount: pageAgentClients.size
         });
     });
 }

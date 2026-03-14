@@ -6,4 +6,5 @@ export interface ClientMessage {
   success?: boolean;
   data?: string;
   history?: unknown[];
+  status?: 'connected' | 'disconnected';
 }

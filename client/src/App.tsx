@@ -21,6 +21,16 @@ function toProxyUrl(baseURL: string): string {
 // Module-level flag to prevent multiple WebSocket connections
 let wsInitialized = false;
 
+// Report page agent status to server
+function reportPageStatus(ws: WebSocket, hasExtension: boolean) {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'pageStatus',
+      status: hasExtension ? 'connected' : 'disconnected'
+    }));
+  }
+}
+
 function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
@@ -52,18 +62,27 @@ function App() {
     }
   }, [model]);
 
-  // Check for extension
+  // Check for extension and report status to server
   useEffect(() => {
+    let previousHasExtension = false;
+
     const checkExtension = () => {
       setIsChecking(true);
       console.log("window.PAGE_AGENT_EXT", window.PAGE_AGENT_EXT);
-      if (window.PAGE_AGENT_EXT) {
-        setIsConnected(true);
-      } else {
-        setIsConnected(false);
+      const hasExtension = !!window.PAGE_AGENT_EXT;
+      setIsConnected(hasExtension);
+
+      // Report status to server when extension status changes
+      if (hasExtension !== previousHasExtension) {
+        const ws = wsRef.current;
+        if (ws) {
+          reportPageStatus(ws, hasExtension);
+        }
+        previousHasExtension = hasExtension;
       }
+
       setIsChecking(false);
-      return !!window.PAGE_AGENT_EXT;
+      return hasExtension;
     };
 
     checkExtension();
@@ -97,6 +116,10 @@ function App() {
         console.log('WebSocket connected to server');
         isConnected = true;
         setWsConnected(true);
+        // Report current extension status to server
+        if (ws) {
+          reportPageStatus(ws, !!window.PAGE_AGENT_EXT);
+        }
       };
 
       ws.onmessage = (event) => {

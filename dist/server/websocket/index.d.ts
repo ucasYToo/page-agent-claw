@@ -2,6 +2,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { Server } from 'http';
 import { TaskResult, PendingRequest } from '../types.js';
 export declare const clients: Set<WebSocket>;
+export declare const pageAgentClients: Set<WebSocket>;
 export declare const taskResults: Map<string, TaskResult>;
 export declare const pendingRequests: Map<string, PendingRequest>;
 export declare function generateTaskId(): string;

@@ -1,6 +1,8 @@
 import { WebSocketServer, WebSocket } from 'ws';
 // Store connected WebSocket clients
 export const clients = new Set();
+// Store page-agent clients (clients that have reported their extension status)
+export const pageAgentClients = new Set();
 // Task result storage
 export const taskResults = new Map();
 // Pending requests waiting for task results
@@ -69,6 +71,18 @@ export function createWebSocketServer(server) {
                     }));
                     return;
                 }
+                // Handle page status from client
+                if (message.type === 'pageStatus') {
+                    if (message.status === 'connected') {
+                        pageAgentClients.add(ws);
+                        console.log('Page agent connected, total:', pageAgentClients.size);
+                    }
+                    else {
+                        pageAgentClients.delete(ws);
+                        console.log('Page agent disconnected, total:', pageAgentClients.size);
+                    }
+                    return;
+                }
                 // Echo back for confirmation (optional)
                 ws.send(JSON.stringify({
                     type: 'acknowledged',
@@ -83,6 +97,7 @@ export function createWebSocketServer(server) {
         ws.on('close', () => {
             console.log('Client disconnected');
             clients.delete(ws);
+            pageAgentClients.delete(ws);
         });
         // Handle errors
         ws.on('error', (err) => {

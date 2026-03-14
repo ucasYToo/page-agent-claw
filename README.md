@@ -48,18 +48,77 @@ PORT=8080 page-agent-claw
 |------|------|------|
 | `/health` | GET | 健康检查 |
 | `/api/task` | POST | 提交任务 |
-| `/api/clients` | GET | 查看连接的客户端 |
+| `/api/clients` | GET | 查看连接的客户端数 |
+| `/api/status` | GET | 状态监测 |
+| `/proxy/:target` | ALL | 代理请求（解决跨域） |
 | WebSocket | WS | 实时通信（端口 4222） |
+
+### POST /api/task
+
+提交任务到已连接的客户端执行。
+
+**请求体：**
+
+```json
+{
+  "task": "在当前页面执行某个操作",
+  "metadata": { }
+}
+```
+
+**响应：**
+
+```json
+{
+  "success": true,
+  "taskId": "task_1234567890_abc",
+  "result": {
+    "success": true,
+    "data": "执行结果",
+    "history": []
+  }
+}
+```
+
+### /api/status 状态码
+
+| 状态码 | 含义 |
+|--------|------|
+| 100 | 仅 node 服务启动，无 WebSocket 连接（页面未打开） |
+| 105 | 有 WebSocket 连接，但 page-agent（扩展）未连接 |
+| 200 | 正常（WebSocket + page-agent 已连接） |
+
+**响应示例：**
+
+```json
+// 100 无连接
+{"code":100,"message":"请打开 localhost:4222 页面","connectedNumber":0}
+
+// 105 有连接但无 page-agent
+{"code":105,"message":"page-agent 未连接","connectedNumber":1}
+
+// 200 正常
+{"code":200,"message":"正常","connectedNumber":1,"pageAgentCount":1}
+```
 
 ## 项目结构
 
 ```
 page-agent-claw/
 ├── src/
-│   ├── server/index.ts    # 服务器（Express + WebSocket）
-│   └── cli/index.ts       # CLI 入口
-├── client/                # 前端页面源码
-├── dist/                  # 构建输出
+│   ├── server/
+│   │   ├── index.ts           # 服务器入口
+│   │   ├── types.ts           # 共享类型定义
+│   │   ├── middleware/
+│   │   │   └── proxy.ts       # 代理中间件
+│   │   ├── routes/
+│   │   │   └── task.ts        # API 路由
+│   │   └── websocket/
+│   │       ├── index.ts       # WebSocket 服务
+│   │       └── types.ts       # WebSocket 类型
+│   └── cli/index.ts           # CLI 入口
+├── client/                    # 前端页面源码（React）
+├── dist/                      # 构建输出
 └── package.json
 ```
 
