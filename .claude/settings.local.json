@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(chmod +x /Users/niannian/page-agent-claw/dist/cli/index.js)",
+      "Bash(curl -s http://localhost:4222/health)",
+      "Bash(curl -s http://localhost:4222/)",
+      "Bash(pkill -f \"node dist/server\")",
+      "Bash(pkill -f \"node dist\")",
+      "Bash(pkill -f \"tsx src/server\")",
+      "Bash(pkill -f page-agent-claw)",
+      "Bash(pkill -f \"node\")",
+      "Bash(git init:*)",
+      "Bash(git remote:*)"
+    ]
+  }
+}
