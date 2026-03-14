@@ -15,6 +15,45 @@ app.use(cors());
 app.use(express.json());
 // Serve static files from client build
 app.use(express.static(CLIENT_PATH));
+// Proxy middleware - must be before static file serving
+app.use('/proxy/:target(*)', async (req, res) => {
+    try {
+        const { target } = req.params;
+        const decodedTarget = decodeURIComponent(target);
+        let targetUrl = `https://${decodedTarget}`;
+        console.log(`Proxying request to: ${targetUrl}`);
+        // Read body
+        const bodyStr = ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body);
+        // Forward the request to target
+        const headers = {};
+        Object.entries(req.headers).forEach(([key, value]) => {
+            if (key !== 'host' && key !== 'content-length' && value) {
+                headers[key] = Array.isArray(value) ? value[0] : value;
+            }
+        });
+        const response = await fetch(targetUrl, {
+            method: req.method,
+            headers,
+            body: bodyStr,
+            // @ts-ignore - Node 22+ supports this
+            duplex: 'half',
+        });
+        // Set response headers
+        response.headers.forEach((value, key) => {
+            if (!['content-encoding', 'transfer-encoding', 'content-length'].includes(key)) {
+                res.setHeader(key, value);
+            }
+        });
+        // Send response
+        const data = await response.text();
+        console.log('Response status:', response.status);
+        res.status(response.status).send(data);
+    }
+    catch (error) {
+        console.error('Proxy error:', error);
+        res.status(500).json({ error: String(error) });
+    }
+});
 // Store connected WebSocket clients
 const clients = new Set();
 const taskResults = new Map();
@@ -176,9 +215,9 @@ app.get('/api/clients', (req, res) => {
         count: clients.size
     });
 });
-// Serve index.html for all non-API routes (SPA support)
+// Serve index.html for all non-API, non-proxy routes (SPA support)
 app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api')) {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/proxy')) {
         res.sendFile(path.join(CLIENT_PATH, 'index.html'));
     }
 });
