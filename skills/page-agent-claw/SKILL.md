@@ -3,7 +3,7 @@ name: Page Agent Claw Controller
 slug: page-agent-claw
 version: 1.0.0
 homepage: https://github.com/page-agent-claw
-description: 控制page-agent打开、浏览页面。检查服务状态，提交浏览任务。
+description: 通过本地 page-agent 服务（运行在 http://localhost:4222）执行浏览器自动化任务。当用户指令中包含 "page-agent" 或需要调用本地浏览器时使用,该服务可以打开网页、执行页面操作、提取信息等。
 metadata: {"clawdbot":{"emoji":"🕸️","requires":{"bins":["npm","node","curl"]},"os":["linux","darwin","win32"],"configPaths":[]}}
 ---
 
