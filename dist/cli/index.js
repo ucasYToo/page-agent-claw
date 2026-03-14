@@ -23,28 +23,9 @@ async function checkServer() {
         });
     });
 }
-function buildClient() {
-    return new Promise((resolve, reject) => {
-        console.log('Building client...');
-        const build = spawn('npm', ['run', 'build:client'], {
-            cwd: projectRoot,
-            shell: true,
-            stdio: 'inherit'
-        });
-        build.on('close', (code) => {
-            if (code === 0) {
-                console.log('Client built successfully');
-                resolve(true);
-            }
-            else {
-                reject(new Error(`Build failed with code ${code}`));
-            }
-        });
-    });
-}
 function startServer() {
     console.log('Starting server...');
-    const server = spawn('npm', ['run', 'dev:server'], {
+    const server = spawn('node', ['dist/server/index.js'], {
         cwd: projectRoot,
         shell: true,
         stdio: 'inherit',
@@ -71,6 +52,14 @@ function openBrowser() {
 }
 async function main() {
     try {
+        // Check for version flag
+        const args = process.argv.slice(2);
+        if (args.includes('-v') || args.includes('--version')) {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const packageJson = require('../package.json');
+            console.log(`page-agent-claw v${packageJson.version}`);
+            return;
+        }
         // Check if port is already in use
         const isRunning = await checkServer();
         if (isRunning) {
@@ -78,9 +67,7 @@ async function main() {
             console.log(`Open http://localhost:${PORT} in your browser`);
             return;
         }
-        // Build client
-        await buildClient();
-        // Start server
+        // Start server directly (dist is already built in published package)
         startServer();
         // Wait a bit for server to start
         setTimeout(() => {
