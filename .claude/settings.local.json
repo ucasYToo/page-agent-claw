@@ -13,7 +13,8 @@
       "Bash(pkill -f page-agent-claw)",
       "Bash(pkill -f \"node\")",
       "Bash(git init:*)",
-      "Bash(git remote:*)"
+      "Bash(git remote:*)",
+      "Bash(npm publish:*)"
     ]
   }
 }
