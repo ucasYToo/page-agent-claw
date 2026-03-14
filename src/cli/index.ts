@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
+import { readFileSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,8 +69,7 @@ async function main() {
     // Check for version flag
     const args = process.argv.slice(2);
     if (args.includes('-v') || args.includes('--version')) {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const packageJson = require('../package.json');
+      const packageJson = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf-8'));
       console.log(`page-agent-claw v${packageJson.version}`);
       return;
     }

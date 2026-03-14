@@ -1,9 +1,12 @@
 import express from 'express';
 import { createServer } from 'http';
-import { WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+import { createProxyMiddleware } from './middleware/proxy.js';
+import { createWebSocketServer } from './websocket/index.js';
+import { setupRoutes } from './routes/task.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,256 +24,10 @@ app.use(express.json());
 app.use(express.static(CLIENT_PATH));
 
 // Proxy middleware - must be before static file serving
-app.use('/proxy/:target(*)', async (req, res) => {
-  try {
-    const { target } = req.params;
-    const decodedTarget = decodeURIComponent(target);
-    let targetUrl = `https://${decodedTarget}`;
+app.use('/proxy/:target(*)', createProxyMiddleware());
 
-    console.log(`Proxying request to: ${targetUrl}`);
-
-    // Read body
-    const bodyStr = ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body);
-
-    // Forward the request to target
-    const headers: Record<string, string> = {};
-    Object.entries(req.headers).forEach(([key, value]) => {
-      if (key !== 'host' && key !== 'content-length' && value) {
-        headers[key] = Array.isArray(value) ? value[0] : value;
-      }
-    });
-
-    const response = await fetch(targetUrl, {
-      method: req.method,
-      headers,
-      body: bodyStr,
-      // @ts-ignore - Node 22+ supports this
-      duplex: 'half',
-    });
-
-    // Set response headers
-    response.headers.forEach((value, key) => {
-      if (!['content-encoding', 'transfer-encoding', 'content-length'].includes(key)) {
-        res.setHeader(key, value);
-      }
-    });
-
-    // Send response
-    const data = await response.text();
-    console.log('Response status:', response.status);
-    res.status(response.status).send(data);
-  } catch (error) {
-    console.error('Proxy error:', error);
-    res.status(500).json({ error: String(error) });
-  }
-});
-
-// Store connected WebSocket clients
-const clients: Set<WebSocket> = new Set();
-
-// Task result storage
-interface TaskResult {
-  taskId: string;
-  task: string;
-  success: boolean;
-  data: string;
-  history: unknown[];
-  completedAt?: number;
-}
-
-const taskResults: Map<string, TaskResult> = new Map();
-
-// Pending requests waiting for task results
-interface PendingRequest {
-  taskId: string;
-  resolve: (result: TaskResult) => void;
-  reject: (error: Error) => void;
-  timeout: ReturnType<typeof setTimeout>;
-}
-
-const pendingRequests: Map<string, PendingRequest> = new Map();
-
-// Create HTTP server
-const server = createServer(app);
-
-// Create WebSocket server
-const wss = new WebSocketServer({ server });
-
-// Generate unique task ID
-function generateTaskId(): string {
-  return `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
-
-// WebSocket connection handler
-wss.on('connection', (ws) => {
-  console.log('Client connected via WebSocket');
-  clients.add(ws);
-
-  // Send welcome message
-  ws.send(JSON.stringify({
-    type: 'connected',
-    message: 'Connected to Page Agent Server'
-  }));
-
-  // Handle messages from client
-  ws.on('message', (data) => {
-    try {
-      const message = JSON.parse(data.toString());
-      console.log('Received from client:', message);
-
-      // Handle task result from client
-      if (message.type === 'taskResult' && message.taskId) {
-        const result: TaskResult = {
-          taskId: message.taskId,
-          task: message.task || '',
-          success: message.success ?? false,
-          data: message.data || '',
-          history: message.history || [],
-          completedAt: Date.now()
-        };
-
-        // Store the result
-        taskResults.set(message.taskId, result);
-
-        // Check if there's a pending request waiting for this result
-        const pending = pendingRequests.get(message.taskId);
-        if (pending) {
-          clearTimeout(pending.timeout);
-          pending.resolve(result);
-          pendingRequests.delete(message.taskId);
-        }
-
-        // Acknowledge receipt
-        ws.send(JSON.stringify({
-          type: 'resultAcknowledged',
-          taskId: message.taskId
-        }));
-        return;
-      }
-
-      // Echo back for confirmation (optional)
-      ws.send(JSON.stringify({
-        type: 'acknowledged',
-        originalMessage: message
-      }));
-    } catch (err) {
-      console.error('Failed to parse message:', err);
-    }
-  });
-
-  // Handle client disconnect
-  ws.on('close', () => {
-    console.log('Client disconnected');
-    clients.delete(ws);
-  });
-
-  // Handle errors
-  ws.on('error', (err) => {
-    console.error('WebSocket error:', err);
-    clients.delete(ws);
-  });
-});
-
-// Broadcast task to all connected clients
-function broadcastTask(task: string, taskId: string, metadata?: Record<string, unknown>) {
-  const message = JSON.stringify({
-    type: 'task',
-    taskId,
-    task,
-    metadata,
-    timestamp: Date.now()
-  });
-
-  let connectedCount = 0;
-  clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(message);
-      connectedCount++;
-    }
-  });
-
-  return connectedCount;
-}
-
-// POST endpoint to receive task descriptions
-app.post('/api/task', (req, res) => {
-  const { task, metadata } = req.body;
-
-  if (!task || typeof task !== 'string') {
-    return res.status(400).json({
-      success: false,
-      error: 'Task is required and must be a string'
-    });
-  }
-
-  const taskId = generateTaskId();
-  const connectedClients = broadcastTask(task, taskId, metadata);
-
-  if (connectedClients === 0) {
-    // No clients connected, return immediately
-    return res.status(200).json({
-      success: true,
-      message: 'Task queued, but no clients are currently connected',
-      connectedClients: 0
-    });
-  }
-
-  console.log(`Task sent to ${connectedClients} client(s): ${task.substring(0, 50)}... (taskId: ${taskId})`);
-
-  // Wait for result with timeout (5 minutes)
-  const TIMEOUT_MS = 5 * 60 * 1000;
-
-  // Set response as pending - don't send response yet
-  const timeout = setTimeout(() => {
-    pendingRequests.delete(taskId);
-    console.log(`Task ${taskId} timed out`);
-    res.json({
-      success: false,
-      taskId,
-      error: 'Task execution timed out'
-    });
-  }, TIMEOUT_MS);
-
-  pendingRequests.set(taskId, {
-    taskId,
-    resolve: (result) => {
-      console.log(`Task ${taskId} completed with result:`, result.success ? 'success' : 'error');
-      res.json({
-        success: true,
-        taskId,
-        result: {
-          success: result.success,
-          data: result.data,
-          history: result.history
-        }
-      });
-    },
-    reject: (error) => {
-      console.error(`Task ${taskId} failed:`, error);
-      res.status(500).json({
-        success: false,
-        taskId,
-        error: error.message
-      });
-    },
-    timeout
-  });
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    connectedClients: clients.size
-  });
-});
-
-// Get connected clients info
-app.get('/api/clients', (req, res) => {
-  res.json({
-    count: clients.size
-  });
-});
+// Setup API routes
+setupRoutes(app);
 
 // Serve index.html for all non-API, non-proxy routes (SPA support)
 app.get('*', (req, res) => {
@@ -278,6 +35,12 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(CLIENT_PATH, 'index.html'));
   }
 });
+
+// Create HTTP server
+const server = createServer(app);
+
+// Create WebSocket server
+createWebSocketServer(server);
 
 // Start server
 server.listen(PORT, () => {
