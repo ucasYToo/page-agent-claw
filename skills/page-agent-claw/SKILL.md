@@ -13,7 +13,7 @@ metadata: {"clawdbot":{"emoji":"🕸️","requires":{"bins":["npm","node","curl"
 
 ## Prerequisites
 
-确保page-agent-claw已安装并运行在端口4222。
+确保page-agent-claw npm包已安装，并运行在端口4222。
 
 ## Workflow
 
@@ -53,6 +53,23 @@ curl -X POST http://localhost:4222/api/task \
   -H "Content-Type: application/json" \
   -d '{"task": "打开 https://www.example.com"}'
 ```
+
+**⚠️ 超时设置提示**
+
+复杂任务（如多步骤操作、大量数据提取）可能需要较长时间，建议设置 curl 超时参数：
+
+```bash
+# 设置最大执行时间为 120 秒
+curl -X POST http://localhost:4222/api/task \
+  -H "Content-Type: application/json" \
+  --max-time 180 \
+  -d '{"task": "复杂的浏览任务"}'
+```
+
+| 参数 | 说明 |
+|------|------|
+| `--max-time <seconds>` | 设置整个操作的最大允许时间 |
+| `--connect-timeout <seconds>` | 仅设置连接超时时间 |
 
 **任务示例**:
 - `"打开 https://www.example.com"`

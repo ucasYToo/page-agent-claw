@@ -482,6 +482,26 @@
   margin-left: 8px;
 }
 
+.activity-executed-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-output {
+  margin: 8px 0 0 0;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  color: #374151;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
 .error-text {
   color: #ef4444;
 }

@@ -44,10 +44,15 @@ function ActivityContent({ activity }: { activity: AgentActivity }) {
       )
     case 'executed':
       return (
-        <span>
-          Executed: <code>{activity.tool}</code>
-          <span className="duration">({activity.duration}ms)</span>
-        </span>
+        <div className="activity-executed-content">
+          <div>
+            Executed: <code>{activity.tool}</code>
+            <span className="duration">({activity.duration}ms)</span>
+          </div>
+          {activity.output && (
+            <pre className="activity-output">{activity.output}</pre>
+          )}
+        </div>
       )
     case 'retrying':
       return (
